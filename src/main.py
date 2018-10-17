@@ -1,8 +1,13 @@
-from src.util.file_handler import read_ppm_image
+from src.domain.models.Image import Image
 
 if __name__ == '__main__':
     ppm_filename = "../data/in.ppm"
+    ppm_save_filename = "../data/out."
 
-    image = read_ppm_image(ppm_filename)
+    print("Loading image...")
+    image = Image.load(ppm_filename)
 
-    print(image)
+    print("Saving image...")
+    image.save(ppm_save_filename)
+
+    print("Task done...")

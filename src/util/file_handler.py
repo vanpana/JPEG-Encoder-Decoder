@@ -1,10 +1,7 @@
 import os
 
-from src.domain.models.Image import Image
-from src.domain.models.PixelRGB import PixelRGB
 
-
-def read_lines_from_file(filename):
+def read_lines_from_file(filename: str):
     """
     Yields all lines from a file. Lines are stripped from line breaks and empty spaces.
     :param filename: Path to the file
@@ -17,37 +14,20 @@ def read_lines_from_file(filename):
             yield line.strip('\n').strip(' ')
 
 
-def read_ppm_image(filename):
+def write_lines_to_file(data, filename: str, file_format: str = None):
     """
-    Reads a PPM file and returns an image object containing that data
-    :param filename: Path to the image file
-    :return: Image object containing PPM data / None if image file not existent
+    Writes data to a file.
+    :param data: Data object to be written to the file.
+    :param filename: The file where data should be written
+    :param file_format: The file format
+    :return: None
     """
-    # Get generator form file
-    file_generator = read_lines_from_file(filename)
+    # Add extension to the filename if needed
+    if file_format is not None and not filename.lower().endswith(file_format):
+        if not file_format.startswith('.'):
+            file_format = "." + file_format
 
-    # Check if file generator was created
-    if file_generator is None:
-        return None
+        filename = filename.rstrip('.') + file_format
 
-    # Get image type
-    image_type = next(file_generator)
-
-    # Get image description
-    image_description = next(file_generator)
-
-    # Get image size
-    width, height = tuple(map(int, next(file_generator).split(' ')))
-
-    # Get image depth
-    depth = int(next(file_generator))
-
-    # Construct rgb pixel list
-    pixels = []
-    for r_value in file_generator:
-        g_value = next(file_generator)
-        b_value = next(file_generator)
-        pixels.append(PixelRGB(int(r_value), int(g_value), int(b_value)))
-
-    # Construct and return image
-    return Image(image_type, image_description, width, height, depth, pixels)
+    with open(filename, 'w') as file:
+        file.write(data)

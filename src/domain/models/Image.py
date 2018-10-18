@@ -3,7 +3,7 @@ from enum import Enum
 from src.domain.exceptions.FormatNotSupportedException import FormatNotSupportedException
 from src.domain.exceptions.InvalidSizeException import InvalidSizeException
 from src.domain.exceptions.PixelFormatException import PixelFormatException
-from src.domain.models.PixelRGB import PixelRGB
+from src.domain.models.Pixels import PixelRGB
 from src.util.file_handler import write_lines_to_file, read_lines_from_file
 
 
@@ -98,6 +98,15 @@ class Image:
                                                     self.pixels]))
 
             write_lines_to_file(ppm_image, filename, ".ppm")
+
+    def convert_color_space(self, pixel_type):
+        if pixel_type != self.pixel_type:
+            self.pixel_type = pixel_type
+
+            if self.pixel_type == PixelType.RGB:
+                self.pixels = [pixel.get_pixel_rgb() for pixel in self.pixels]
+            elif self.pixel_type == PixelType.YUV:
+                self.pixels = [pixel.get_pixel_yuv() for pixel in self.pixels]
 
     def __repr__(self):
         return str(self)

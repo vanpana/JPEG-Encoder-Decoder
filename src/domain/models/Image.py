@@ -133,14 +133,44 @@ class Image:
                                range(col, col + 8)], pos))
                 pos += 1
 
-            for u_block in u_blocks:
-                u_block.shrink()
+            for i in range(0, len(u_blocks)):
+                u_blocks[i].shrink()
 
+            # Construct V blocks
+            v_blocks = []
+            pos = 0
+            for line in range(0, self.height, 8):
+                for col in range(0, self.width, 8):
+                    v_blocks.append(
+                        Block([self.pixels[self.width * i + j].y for i in range(line, line + 8) for j in
+                               range(col, col + 8)], pos))
+                pos += 1
+
+            for i in range(0, len(v_blocks)):
+                v_blocks[i].shrink()
+
+            return y_blocks, u_blocks, v_blocks
         else:
             raise FormatNotSupportedException("Can't yet split into RGB blocks")
 
-    def construct_from_blocks(self, blocks_tuple):
-        pass
+    @staticmethod
+    def construct_from_blocks(blocks):
+        y_blocks = blocks[0]
+        u_blocks = blocks[1]
+        v_blocks = blocks[2]
+
+        # Grow U blocks
+        for i in range(0, len(u_blocks)):
+            u_blocks[i].grow()
+
+        # Grow Y blocks
+        for i in range(0, len(v_blocks)):
+            v_blocks[i].grow()
+
+        # Build pixels
+
+        # Return image
+        return None
 
     def __repr__(self):
         return str(self)

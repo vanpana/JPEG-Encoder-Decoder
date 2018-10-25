@@ -11,7 +11,10 @@ if __name__ == '__main__':
     image.convert_color_space(PixelType.YUV)
 
     print("Splitting into blocks")
-    image.split_into_blocks()
+    yb, ub, vb = image.split_into_blocks()
+
+    print("Building back image")
+    new_img = Image.construct_from_blocks([yb, ub, vb])
 
     print("Converting to RGB...")
     image.convert_color_space(PixelType.RGB)

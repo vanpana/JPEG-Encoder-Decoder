@@ -17,10 +17,9 @@ if __name__ == '__main__':
     new_img = Image.construct_from_blocks([yb, ub, vb])
 
     print("Converting to RGB...")
-    image.convert_color_space(PixelType.RGB)
-    print(image.pixel_type)
+    new_img.convert_color_space(PixelType.RGB)
 
     print("Saving image...")
-    image.save(ppm_save_filename)
+    new_img.save(ppm_save_filename)
 
     print("Task done...")

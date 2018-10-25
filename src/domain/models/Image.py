@@ -4,7 +4,7 @@ from src.domain.exceptions.FormatNotSupportedException import FormatNotSupported
 from src.domain.exceptions.InvalidSizeException import InvalidSizeException
 from src.domain.exceptions.PixelFormatException import PixelFormatException
 from src.domain.models.Block import Block
-from src.domain.models.Pixels import PixelRGB
+from src.domain.models.Pixels import PixelRGB, PixelYUV
 from src.util.file_handler import write_lines_to_file, read_lines_from_file
 
 
@@ -168,9 +168,11 @@ class Image:
             v_blocks[i].grow()
 
         # Build pixels
+        pixels = [PixelYUV(y_blocks[i].items[j], u_blocks[i].items[j], v_blocks[i].items[j]) for i in
+                  range(0, len(y_blocks)) for j in range(0, len(y_blocks[i].items))]
 
-        # Return image
-        return None
+        # Return image TODO Lol calculate w, h
+        return Image("P3", "# Description", 800, 600, 255, pixels, PixelType.YUV)
 
     def __repr__(self):
         return str(self)

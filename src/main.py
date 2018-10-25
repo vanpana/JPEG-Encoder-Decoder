@@ -9,7 +9,9 @@ if __name__ == '__main__':
 
     print("Converting to YUV...")
     image.convert_color_space(PixelType.YUV)
-    print(image.pixel_type)
+
+    print("Splitting into blocks")
+    image.split_into_blocks()
 
     print("Converting to RGB...")
     image.convert_color_space(PixelType.RGB)

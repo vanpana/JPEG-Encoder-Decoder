@@ -27,9 +27,6 @@ class PixelYUV:
         self.v = v
 
     def get_pixel_rgb(self):
-        # r = (298.082 * self.y + 408.583 * self.v) / 256 - 222.921
-        # g = (298.082 * self.y - 100.291 * self.u - 208.120 * self.v) / 256 + 135.576
-        # b = (298.082 * self.y + 516.412 * self.u) / 256 - 276.836
         r = self.y + 1.402 * (self.v - 128)
         g = self.y - 0.344136 * (self.u - 128) - 0.714136 * (self.v - 128)
         b = self.y + 0.1772 * (self.u - 128)

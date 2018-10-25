@@ -3,6 +3,7 @@ from enum import Enum
 from src.domain.exceptions.FormatNotSupportedException import FormatNotSupportedException
 from src.domain.exceptions.InvalidSizeException import InvalidSizeException
 from src.domain.exceptions.PixelFormatException import PixelFormatException
+from src.domain.models.Block import Block
 from src.domain.models.Pixels import PixelRGB
 from src.util.file_handler import write_lines_to_file, read_lines_from_file
 
@@ -38,6 +39,7 @@ class Image:
         :param filename: The file where the image should be read from
         :return: None if file does not exist / Image with a type
         """
+
         # Get generator form file
         file_generator = read_lines_from_file(filename)
 
@@ -78,6 +80,7 @@ class Image:
         :raise: InvalidSizeException if actual pixels are less than the specified size
         :raise: PixelFormatException if pixel type is not suitable to image type
         """
+
         if len(self.pixels) != self.width * self.height:
             raise InvalidSizeException("Actual pixels are less than the specified size")
 
@@ -107,6 +110,37 @@ class Image:
                 self.pixels = [pixel.get_pixel_rgb() for pixel in self.pixels]
             elif self.pixel_type == PixelType.YUV:
                 self.pixels = [pixel.get_pixel_yuv() for pixel in self.pixels]
+
+    def split_into_blocks(self):
+        if self.pixel_type == PixelType.YUV:
+            # Construct Y blocks
+            y_blocks = []
+            pos = 0
+            for line in range(0, self.height, 8):
+                for col in range(0, self.width, 8):
+                    y_blocks.append(
+                        Block([self.pixels[self.width * i + j].y for i in range(line, line + 8) for j in
+                               range(col, col + 8)], pos))
+                pos += 1
+
+            # Construct U blocks
+            u_blocks = []
+            pos = 0
+            for line in range(0, self.height, 8):
+                for col in range(0, self.width, 8):
+                    u_blocks.append(
+                        Block([self.pixels[self.width * i + j].y for i in range(line, line + 8) for j in
+                               range(col, col + 8)], pos))
+                pos += 1
+
+            for u_block in u_blocks:
+                u_block.shrink()
+
+        else:
+            raise FormatNotSupportedException("Can't yet split into RGB blocks")
+
+    def construct_from_blocks(self, blocks_tuple):
+        pass
 
     def __repr__(self):
         return str(self)

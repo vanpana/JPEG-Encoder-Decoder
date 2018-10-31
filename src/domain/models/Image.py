@@ -1,3 +1,4 @@
+from copy import deepcopy
 from enum import Enum
 
 from src.domain.exceptions.FormatNotSupportedException import FormatNotSupportedException
@@ -129,7 +130,7 @@ class Image:
             for line in range(0, self.height, 8):
                 for col in range(0, self.width, 8):
                     u_blocks.append(
-                        Block([self.pixels[self.width * i + j].y for i in range(line, line + 8) for j in
+                        Block([self.pixels[self.width * i + j].u for i in range(line, line + 8) for j in
                                range(col, col + 8)], pos))
                 pos += 1
 
@@ -142,7 +143,7 @@ class Image:
             for line in range(0, self.height, 8):
                 for col in range(0, self.width, 8):
                     v_blocks.append(
-                        Block([self.pixels[self.width * i + j].y for i in range(line, line + 8) for j in
+                        Block([self.pixels[self.width * i + j].v for i in range(line, line + 8) for j in
                                range(col, col + 8)], pos))
                 pos += 1
 
@@ -155,9 +156,9 @@ class Image:
 
     @staticmethod
     def construct_from_blocks(blocks):
-        y_blocks = blocks[0]
-        u_blocks = blocks[1]
-        v_blocks = blocks[2]
+        y_blocks = deepcopy(blocks[0])
+        u_blocks = deepcopy(blocks[1])
+        v_blocks = deepcopy(blocks[2])
 
         # Grow U blocks
         for i in range(0, len(u_blocks)):

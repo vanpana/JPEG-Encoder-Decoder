@@ -127,20 +127,20 @@ class Image:
             # Construct Y blocks
             y_blocks = []
             Global.position = 0
-            for col in range(0, self.width, 8):
-                for line in range(0, self.height, 8):
+            for line in range(0, self.height, 8):
+                for col in range(0, self.width, 8):
                     y_blocks.append(
-                        Block([[self.pixels[j][i].y for i in range(col, col + 8)] for j in
-                               range(line, line + 8)], Global.position))
+                        Block([[self.pixels[i][j].y for i in range(line, line + 8)] for j in
+                               range(col, col + 8)], Global.position))
 
             # Construct U blocks
             u_blocks = []
             Global.position = 0
-            for col in range(0, self.width, 8):
-                for line in range(0, self.height, 8):
+            for line in range(0, self.height, 8):
+                for col in range(0, self.width, 8):
                     u_blocks.append(
-                        Block([[self.pixels[j][i].u for i in range(col, col + 8)] for j in
-                               range(line, line + 8)], Global.position))
+                        Block([[self.pixels[i][j].u for i in range(line, line + 8)] for j in
+                               range(col, col + 8)], Global.position))
 
             for i in range(0, len(u_blocks)):
                 u_blocks[i].shrink()
@@ -148,11 +148,11 @@ class Image:
             # Construct V blocks
             v_blocks = []
             Global.position = 0
-            for col in range(0, self.width, 8):
-                for line in range(0, self.height, 8):
+            for line in range(0, self.height, 8):
+                for col in range(0, self.width, 8):
                     v_blocks.append(
-                        Block([[self.pixels[j][i].v for i in range(col, col + 8)] for j in
-                               range(line, line + 8)], Global.position))
+                        Block([[self.pixels[i][j].v for i in range(line, line + 8)] for j in
+                               range(col, col + 8)], Global.position))
 
             for i in range(0, len(v_blocks)):
                 v_blocks[i].shrink()
@@ -169,11 +169,13 @@ class Image:
 
         # Grow U blocks
         for i in range(0, len(u_blocks)):
-            u_blocks[i].grow()
+            if u_blocks[i].block_size != 8:
+                u_blocks[i].grow()
 
         # Grow Y blocks
         for i in range(0, len(v_blocks)):
-            v_blocks[i].grow()
+            if v_blocks[i].block_size != 8:
+                v_blocks[i].grow()
 
         # Build pixels
         total_blocks = len(y_blocks)
@@ -181,16 +183,18 @@ class Image:
         pixels = [[0 for _ in range(0, width)] for _ in range(0, height)]
         step = width // block_size
         for block_no in range(0, total_blocks):
-            starting_i = (y_blocks[block_no].position_in_image // step) * block_size
-            starting_j = (y_blocks[block_no].position_in_image % step) * block_size
+            starting_j = (y_blocks[block_no].position_in_image // step) * block_size
+            starting_i = (y_blocks[block_no].position_in_image % step) * block_size
 
             for i in range(0, block_size):
                 for j in range(0, block_size):
                     pixel = PixelYUV(y_blocks[block_no].items[i][j],
                                      u_blocks[block_no].items[i][j],
                                      v_blocks[block_no].items[i][j])
+                    pixel_i = starting_i + i
+                    pixel_j = starting_j + j
 
-                    pixels[starting_i + i][starting_j + j] = pixel
+                    pixels[pixel_j][pixel_i] = pixel
                     # for block_i in range(0, len(y_blocks), step):  # For the blocks forming a 800x8
         #     for block_j in range(block_i, block_i + step):  # For the blocks in that line
         #         for i in range(0, block_size):  # For going through the current block_no

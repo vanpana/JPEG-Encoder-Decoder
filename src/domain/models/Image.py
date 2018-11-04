@@ -4,8 +4,10 @@ from enum import Enum
 from src.domain.exceptions.FormatNotSupportedException import FormatNotSupportedException
 from src.domain.exceptions.InvalidSizeException import InvalidSizeException
 from src.domain.exceptions.PixelFormatException import PixelFormatException
+from src.domain.models import Block
 from src.domain.models.Block import Block
 from src.domain.models.Pixels import PixelRGB, PixelYUV
+from src.util import Global
 from src.util.file_handler import write_lines_to_file, read_lines_from_file
 
 
@@ -29,8 +31,13 @@ class Image:
         self.depth = depth
 
         if pixels is None:
-            pixels = []
-        self.pixels = pixels
+            pixels = [[] for _ in range(0, width) for _ in range(0, height)]
+
+        try:
+            _ = pixels[0][0]
+            self.pixels = deepcopy(pixels)
+        except Exception as e:
+            self.pixels = [[pixels[i + j * self.width] for i in range(0, width)] for j in range(0, height)]
         self.pixel_type = pixel_type
 
     @staticmethod
@@ -82,7 +89,7 @@ class Image:
         :raise: PixelFormatException if pixel type is not suitable to image type
         """
 
-        if len(self.pixels) != self.width * self.height:
+        if len(self.pixels) * len(self.pixels[0]) != self.width * self.height:
             raise InvalidSizeException("Actual pixels are less than the specified size")
 
         if self.im_type == ImageType.PPM:
@@ -92,14 +99,17 @@ class Image:
             if self.pixel_type != PixelType.RGB:
                 raise PixelFormatException("Pixel type must be RGB")
 
+            image_string = ""
+            for line in self.pixels:
+                for pixel in line:
+                    image_string += "{0}\n{1}\n{2}\n".format(pixel.r, pixel.g, pixel.b)
+
             # Construct data string
             ppm_image = ppm_file_format.format(self.im_type.value,
                                                self.description,
                                                "{0} {1}".format(self.width, self.height),
                                                self.depth,
-                                               ''.join(
-                                                   ["{0}\n{1}\n{2}\n".format(pixel.r, pixel.g, pixel.b) for pixel in
-                                                    self.pixels]))
+                                               image_string)
 
             write_lines_to_file(ppm_image, filename, ".ppm")
 
@@ -108,44 +118,41 @@ class Image:
             self.pixel_type = pixel_type
 
             if self.pixel_type == PixelType.RGB:
-                self.pixels = [pixel.get_pixel_rgb() for pixel in self.pixels]
+                self.pixels = [[pixel.get_pixel_rgb() for pixel in line] for line in self.pixels]
             elif self.pixel_type == PixelType.YUV:
-                self.pixels = [pixel.get_pixel_yuv() for pixel in self.pixels]
+                self.pixels = [[pixel.get_pixel_yuv() for pixel in line] for line in self.pixels]
 
     def split_into_blocks(self):
         if self.pixel_type == PixelType.YUV:
             # Construct Y blocks
             y_blocks = []
-            pos = 0
-            for line in range(0, self.height, 8):
-                for col in range(0, self.width, 8):
+            Global.position = 0
+            for col in range(0, self.width, 8):
+                for line in range(0, self.height, 8):
                     y_blocks.append(
-                        Block([self.pixels[self.width * i + j].y for i in range(line, line + 8) for j in
-                               range(col, col + 8)], pos))
-                pos += 1
+                        Block([[self.pixels[j][i].y for i in range(col, col + 8)] for j in
+                               range(line, line + 8)], Global.position))
 
             # Construct U blocks
             u_blocks = []
-            pos = 0
-            for line in range(0, self.height, 8):
-                for col in range(0, self.width, 8):
+            Global.position = 0
+            for col in range(0, self.width, 8):
+                for line in range(0, self.height, 8):
                     u_blocks.append(
-                        Block([self.pixels[self.width * i + j].u for i in range(line, line + 8) for j in
-                               range(col, col + 8)], pos))
-                pos += 1
+                        Block([[self.pixels[j][i].u for i in range(col, col + 8)] for j in
+                               range(line, line + 8)], Global.position))
 
             for i in range(0, len(u_blocks)):
                 u_blocks[i].shrink()
 
             # Construct V blocks
             v_blocks = []
-            pos = 0
-            for line in range(0, self.height, 8):
-                for col in range(0, self.width, 8):
+            Global.position = 0
+            for col in range(0, self.width, 8):
+                for line in range(0, self.height, 8):
                     v_blocks.append(
-                        Block([self.pixels[self.width * i + j].v for i in range(line, line + 8) for j in
-                               range(col, col + 8)], pos))
-                pos += 1
+                        Block([[self.pixels[j][i].v for i in range(col, col + 8)] for j in
+                               range(line, line + 8)], Global.position))
 
             for i in range(0, len(v_blocks)):
                 v_blocks[i].shrink()
@@ -155,7 +162,7 @@ class Image:
             raise FormatNotSupportedException("Can't yet split into RGB blocks")
 
     @staticmethod
-    def construct_from_blocks(blocks):
+    def construct_from_blocks(blocks, width=800, height=600, depth=255):
         y_blocks = deepcopy(blocks[0])
         u_blocks = deepcopy(blocks[1])
         v_blocks = deepcopy(blocks[2])
@@ -169,11 +176,32 @@ class Image:
             v_blocks[i].grow()
 
         # Build pixels
-        pixels = [PixelYUV(y_blocks[i].items[j], u_blocks[i].items[j], v_blocks[i].items[j]) for i in
-                  range(0, len(y_blocks)) for j in range(0, len(y_blocks[i].items))]
+        total_blocks = len(y_blocks)
+        block_size = v_blocks[0].block_size
+        pixels = [[0 for _ in range(0, width)] for _ in range(0, height)]
+        step = width // block_size
+        for block_no in range(0, total_blocks):
+            starting_i = (y_blocks[block_no].position_in_image // step) * block_size
+            starting_j = (y_blocks[block_no].position_in_image % step) * block_size
+
+            for i in range(0, block_size):
+                for j in range(0, block_size):
+                    pixel = PixelYUV(y_blocks[block_no].items[i][j],
+                                     u_blocks[block_no].items[i][j],
+                                     v_blocks[block_no].items[i][j])
+
+                    pixels[starting_i + i][starting_j + j] = pixel
+                    # for block_i in range(0, len(y_blocks), step):  # For the blocks forming a 800x8
+        #     for block_j in range(block_i, block_i + step):  # For the blocks in that line
+        #         for i in range(0, block_size):  # For going through the current block_no
+        #             for j in range(0, block_size):
+        #                 pixel = PixelYUV(y_blocks[block_j].items[i][j],
+        #                                  u_blocks[block_j].items[i][j],
+        #                                  v_blocks[block_j].items[i][j])
+        #                 pixels[block_i + i][block_j + block_size * j] = pixel
 
         # Return image TODO Lol calculate w, h
-        return Image("P3", "# Description", 800, 600, 255, pixels, PixelType.YUV)
+        return Image("P3", "# Description", width, height, depth, pixels, PixelType.YUV)
 
     def __repr__(self):
         return str(self)

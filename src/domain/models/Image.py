@@ -1,5 +1,7 @@
+import math
 from copy import deepcopy
 from enum import Enum
+from math import sqrt
 
 from src.domain.exceptions.FormatNotSupportedException import FormatNotSupportedException
 from src.domain.exceptions.InvalidSizeException import InvalidSizeException
@@ -212,3 +214,71 @@ class Image:
 
     def __str__(self):
         return "{0} image, {1} x {2}, {3} actual pixels".format(self.im_type, self.width, self.height, len(self.pixels))
+
+
+class DCTImage:
+    sqrt2 = sqrt(2)
+
+    def __init__(self, y_blocks, u_blocks, v_blocks):
+        Global.position = 0
+        self.dct_blocks = [DCTImage.block_to_dct(y_blocks[i], u_blocks[i], v_blocks[i]) for i in range(len(y_blocks))]
+        print(self.dct_blocks)
+
+    @staticmethod
+    def a(u):
+        if u > 0:
+            return 1
+        return 1 / DCTImage.sqrt2
+
+    @staticmethod
+    def block_to_dct(y_block: Block, u_block: Block, v_block: Block):
+        y_block = deepcopy(y_block)
+        u_block = deepcopy(u_block)
+        v_block = deepcopy(v_block)
+
+        y_block.subtract_from_values(128)
+
+        u_block.grow()
+        u_block.subtract_from_values(128)
+
+        v_block.grow()
+        v_block.subtract_from_values(128)
+
+        block_size = y_block.block_size
+
+        y_dct_block = Block([[0 for _ in range(0, block_size)] for _ in range(0, block_size)], Global.position)
+        u_dct_block = Block([[0 for _ in range(0, block_size)] for _ in range(0, block_size)], Global.position)
+        v_dct_block = Block([[0 for _ in range(0, block_size)] for _ in range(0, block_size)], Global.position)
+
+        for u in range(0, block_size):
+            for v in range(0, block_size):
+                base_value = 1 / 4 * DCTImage.a(u) * DCTImage.a(v)
+                y_value = base_value
+                u_value = base_value
+                v_value = base_value
+
+                for i in range(0, block_size):
+                    for j in range(0, block_size):
+                        u_val = ((2 * i + 1) * u * math.pi) / 16
+                        v_val = ((2 * j + 1) * v * math.pi) / 16
+                        y_value += DCTImage.add_value_with_u_and_v(y_block.items[i][j], u_val, v_val)
+                        u_value += DCTImage.add_value_with_u_and_v(u_block.items[i][j], u_val, v_val)
+                        v_value += DCTImage.add_value_with_u_and_v(v_block.items[i][j], u_val, v_val)
+
+                y_dct_block.items[u][v] = y_value
+                u_dct_block.items[u][v] = u_value
+                v_dct_block.items[u][v] = v_value
+        return y_dct_block, u_dct_block, v_dct_block
+
+    @staticmethod
+    def add_value_with_u_and_v(block_value, u_val, v_val):
+        return block_value * math.cos(u_val) * math.cos(v_val)
+
+
+class QuantizationImage:
+    def __init__(self, dct_image):
+        self.blocks = []
+
+    @staticmethod
+    def get_division_block(block):
+        pass

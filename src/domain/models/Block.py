@@ -16,8 +16,8 @@ class Block:
         new_items = []
         for col in range(0, self.block_size, step):
             for line in range(0, self.block_size, step):
-                full_item = [self.items[i][j] for j
-                             in range(col, col + step)
+                full_item = [self.items[i][j]
+                             for j in range(col, col + step)
                              for i in range(line, line + step)]
                 new_items.append(sum(full_item) / len(full_item))
         self.items = [new_items[i:i + 4] for i in range(0, len(new_items), shrink_times)]
@@ -39,6 +39,14 @@ class Block:
 
         self.items = new_items
         self.block_size = step
+
+    def subtract_from_values(self, subtract_number=128):
+        self.add_to_values(-subtract_number)
+
+    def add_to_values(self, add_number=128):
+        for i in range(0, len(self.items)):
+            for j in range(0, len(self.items[i])):
+                self.items[i][j] += add_number
 
     def __str__(self):
         return str(self.items)

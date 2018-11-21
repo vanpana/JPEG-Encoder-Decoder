@@ -26,16 +26,17 @@ if __name__ == '__main__':
     quantization_image.dequantize()
 
     print("iDCT")
-    dct_image_from_q = DCTImage.inverse_dct(quantization_image)
-    # print("Building back image")
-    # new_img = Image.construct_from_blocks([yb, ub, vb])
-    #
-    # print("Converting to RGB...")
-    # image.convert_color_space(PixelType.RGB)
-    # new_img.convert_color_space(PixelType.RGB)
-    #
-    # print("Saving image...")
-    # image.save(ppm_save_filename)
-    # new_img.save(ppm_blocks_save_filename)
+    yb, ub, vb = DCTImage.inverse_dct(quantization_image)
+
+    print("Building back image")
+    new_img = Image.construct_from_blocks([yb, ub, vb], width=image.width, height=image.height)
+
+    print("Converting to RGB...")
+    image.convert_color_space(PixelType.RGB)
+    new_img.convert_color_space(PixelType.RGB)
+
+    print("Saving image...")
+    image.save(ppm_save_filename)
+    new_img.save(ppm_blocks_save_filename)
 
     print("Task done...")

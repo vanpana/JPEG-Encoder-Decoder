@@ -221,6 +221,7 @@ class DCTImage:
 
     def __init__(self, y_blocks, u_blocks, v_blocks):
         Global.position = 0
+        # Blocks are tuples of (y/cb/cr)
         self.dct_blocks = [DCTImage.block_to_dct(y_blocks[i], u_blocks[i], v_blocks[i]) for i in range(len(y_blocks))]
         print(self.dct_blocks)
 
@@ -230,6 +231,7 @@ class DCTImage:
             return 1
         return 1 / DCTImage.sqrt2
 
+    # <editor-fold desc="Block to dct">
     @staticmethod
     def block_to_dct(y_block: Block, u_block: Block, v_block: Block):
         y_block = deepcopy(y_block)
@@ -253,32 +255,91 @@ class DCTImage:
         for u in range(0, block_size):
             for v in range(0, block_size):
                 base_value = 1 / 4 * DCTImage.a(u) * DCTImage.a(v)
-                y_value = base_value
-                u_value = base_value
-                v_value = base_value
-
-                for i in range(0, block_size):
-                    for j in range(0, block_size):
-                        u_val = ((2 * i + 1) * u * math.pi) / 16
-                        v_val = ((2 * j + 1) * v * math.pi) / 16
-                        y_value += DCTImage.add_value_with_u_and_v(y_block.items[i][j], u_val, v_val)
-                        u_value += DCTImage.add_value_with_u_and_v(u_block.items[i][j], u_val, v_val)
-                        v_value += DCTImage.add_value_with_u_and_v(v_block.items[i][j], u_val, v_val)
-
-                y_dct_block.items[u][v] = y_value
-                u_dct_block.items[u][v] = u_value
-                v_dct_block.items[u][v] = v_value
+                y_dct_block.items[u][v] = base_value + DCTImage.outer_sum_to_dct(y_block, u, v, block_size)
+                u_dct_block.items[u][v] = base_value + DCTImage.outer_sum_to_dct(u_block, u, v, block_size)
+                v_dct_block.items[u][v] = base_value + DCTImage.outer_sum_to_dct(v_block, u, v, block_size)
         return y_dct_block, u_dct_block, v_dct_block
 
     @staticmethod
-    def add_value_with_u_and_v(block_value, u_val, v_val):
-        return block_value * math.cos(u_val) * math.cos(v_val)
-
-
-class QuantizationImage:
-    def __init__(self, dct_image):
-        self.blocks = []
+    def outer_sum_to_dct(block: Block, u, v, block_size=8):
+        total = 0.0
+        for x in range(0, block_size):
+            total += DCTImage.inner_sum_to_dct(block, u, v, x, block_size)
+        return total
 
     @staticmethod
-    def get_division_block(block):
-        pass
+    def inner_sum_to_dct(block: Block, u, v, x, block_size=8):
+        total = 0.0
+        for y in range(0, block_size):
+            total += DCTImage.product(block.items[x][y], x, y, u, v)
+        return total
+
+    @staticmethod
+    def product(block_value, x, y, u, v):
+        u_val = ((2 * x + 1) * u * math.pi) / 16
+        v_val = ((2 * y + 1) * v * math.pi) / 16
+        return block_value * math.cos(u_val) * math.cos(v_val)
+
+    # </editor-fold>
+
+    @staticmethod
+    def inverse_dct(quantization_image):
+        y_q_blocks = [block[0] for block in quantization_image.blocks]
+        u_q_blocks = [block[1] for block in quantization_image.blocks]
+        v_q_blocks = [block[2] for block in quantization_image.blocks]
+
+        block_size = y_q_blocks[0].block_size
+
+        for x in range(0, block_size):
+            for y in range(0, block_size):
+                base_value = 1 / 4  # TODO MODIFY
+                y_q_blocks.items[u][v] = base_value * DCTImage.outer_sum_from_dct(y_block, u, v, block_size)
+                u_q_blocks.items[u][v] = base_value * DCTImage.outer_sum_from_dct(u_block, u, v, block_size)
+                v_q_blocks.items[u][v] = base_value * DCTImage.outer_sum_from_dct(v_block, u, v, block_size)
+
+    @staticmethod
+    def outer_sum_from_dct(block: Block, u, v, block_size=8):
+        total = 0.0
+        for x in range(0, block_size):
+            total += DCTImage.inner_sum_to_dct(block, u, v, x, block_size)
+        return total
+
+    @staticmethod
+    def inner_sum_from_dct(block: Block, u, v, x, block_size=8):
+        total = 0.0
+        for y in range(0, block_size):
+            total += DCTImage.product(block.items[x][y], x, y, u, v)
+        return total
+
+class QuantizationImage:
+    def __init__(self, dct_image: DCTImage):
+        self.blocks = deepcopy(dct_image.dct_blocks)  # Blocks are tuples of (y/cb/cr)
+        self.quantize()
+        print(self.blocks)
+
+    def quantize(self):
+        for i in range(0, len(self.blocks)):
+            for m in range(0, 8):
+                for n in range(0, 8):
+                    for k in range(0, 3):
+                        self.blocks[i][k].items[m][n] //= self.get_quantization_matrix()[m][n]
+
+    def dequantize(self):
+        for i in range(0, len(self.blocks)):
+            for m in range(0, 8):
+                for n in range(0, 8):
+                    for k in range(0, 3):
+                        self.blocks[i][k].items[m][n] *= self.get_quantization_matrix()[m][n]
+
+    def get_quantization_matrix(self):
+        return \
+            [
+                [6, 4, 4, 6, 10, 16, 20, 24],
+                [5, 5, 6, 8, 10, 23, 24, 22],
+                [6, 5, 6, 10, 16, 23, 28, 22],
+                [6, 7, 9, 12, 20, 35, 32, 25],
+                [7, 9, 15, 22, 27, 44, 41, 31],
+                [10, 14, 22, 26, 32, 42, 45, 37],
+                [20, 26, 31, 35, 41, 48, 48, 40],
+                [29, 37, 38, 39, 45, 40, 41, 40]
+            ]

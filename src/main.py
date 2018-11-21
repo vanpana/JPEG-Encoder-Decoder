@@ -1,10 +1,11 @@
-from src.domain.models.Image import Image, PixelType, DCTImage
+from src.domain.models.Image import Image, PixelType, DCTImage, QuantizationImage
 
 if __name__ == '__main__':
     ppm_filename = "../data/in.ppm"
     ppm_save_filename = "../data/out."
     ppm_blocks_save_filename = "../data/out_b."
 
+    # Encoder
     print("Loading image...")
     image = Image.load(ppm_filename)
 
@@ -14,9 +15,18 @@ if __name__ == '__main__':
     print("Splitting into blocks")
     yb, ub, vb = image.split_into_blocks()
 
-    print("Quantisation")
-    DCTImage(yb, ub, vb)
+    print("fDCT")
+    dct_image = DCTImage(yb, ub, vb)
 
+    print("Quantization")
+    quantization_image = QuantizationImage(dct_image)
+
+    # Decoder
+    print("Dequantizing image")
+    quantization_image.dequantize()
+
+    print("iDCT")
+    dct_image_from_q = DCTImage.inverse_dct(quantization_image)
     # print("Building back image")
     # new_img = Image.construct_from_blocks([yb, ub, vb])
     #

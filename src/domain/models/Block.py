@@ -48,5 +48,8 @@ class Block:
             for j in range(0, len(self.items[i])):
                 self.items[i][j] += add_number
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         return str(self.items)

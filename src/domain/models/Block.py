@@ -9,6 +9,7 @@ class Block:
         self.block_size = len(items)
         self.items = deepcopy(items)  # Items = [[], [], ...]
         self.position_in_image = pos
+        self.steps = None
         Global.position += 1
 
     def shrink(self, shrink_times=4):
@@ -47,6 +48,58 @@ class Block:
         for i in range(0, len(self.items)):
             for j in range(0, len(self.items[i])):
                 self.items[i][j] += add_number
+
+    def get_entropy(self):
+        self.__generate_steps()
+        zig_zag_bytes = self.__get_zig_zag_bytes()
+        pass
+
+    def __get_zig_zag_bytes(self):
+        return [self.items[tup[0]][tup[1]] for tup in self.steps]
+
+    def __generate_steps(self):
+        if self.steps is not None:
+            return
+
+        self.steps = []
+
+        x = 0
+        y = 0
+
+        self.steps.append((y, x))
+
+        while True:
+            if x < self.block_size - 1:
+                x += 1
+            else:
+                y += 1
+            self.steps.append((y, x))
+
+            while True:
+                x -= 1
+                y += 1
+
+                self.steps.append((y, x))
+
+                if x == 0 or y == self.block_size - 1:
+                    break
+
+            if y == 0 or y == self.block_size - 1:
+                x += 1
+            else:
+                y += 1
+
+            self.steps.append((y, x))
+
+            if x == self.block_size - 1 and y == self.block_size - 1:
+                break
+
+            while True:
+                y -= 1
+                x += 1
+                self.steps.append((y, x))
+                if y == 0 or x == self.block_size - 1:
+                    break
 
     def __repr__(self):
         return str(self)

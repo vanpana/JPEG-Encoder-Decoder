@@ -333,14 +333,14 @@ class DCTImage:
     def outer_sum_from_dct(block: Block, x, y, block_size=8):
         total = 0.0
         for u in range(0, block_size):
-            total += DCTImage.inner_sum_to_dct(block, x, y, u, block_size)
+            total += DCTImage.inner_sum_from_dct(block, x, y, u, block_size)
         return total
 
     @staticmethod
     def inner_sum_from_dct(block: Block, x, y, u, block_size=8):
         total = 0.0
         for v in range(0, block_size):
-            total += DCTImage.a(u) * DCTImage.a(v) * DCTImage.product_dct(block.items[x][y], x, y, u, v)
+            total += DCTImage.a(u) * DCTImage.a(v) * DCTImage.product_dct(block.items[u][v], x, y, u, v)
         return total
 
 

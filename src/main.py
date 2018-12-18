@@ -17,28 +17,35 @@ if __name__ == '__main__':
 
     print("Getting entropy")
     yb[0].get_entropy()
-    # print("fDCT")
-    # dct_image = DCTImage(yb, ub, vb)
-    #
-    # print("Quantization")
-    # quantization_image = QuantizationImage(dct_image)
-    #
-    # # Decoder
-    # print("Dequantizing image")
-    # quantization_image.dequantize()
-    #
-    # print("iDCT")
-    # yb, ub, vb = DCTImage.inverse_dct(quantization_image)
-    #
-    # print("Building back image")
-    # new_img = Image.construct_from_blocks([yb, ub, vb], width=image.width, height=image.height)
-    #
-    # print("Converting to RGB...")
-    # image.convert_color_space(PixelType.RGB)
-    # new_img.convert_color_space(PixelType.RGB)
-    #
-    # print("Saving image...")
-    # image.save(ppm_save_filename)
-    # new_img.save(ppm_blocks_save_filename)
-    #
-    # print("Task done...")
+
+    print("fDCT")
+    dct_image = DCTImage(yb, ub, vb)
+
+    print("Quantization")
+    quantization_image = QuantizationImage(dct_image)
+
+    print("Running entropy encoding")
+    quantization_image.entropy_encoding()
+
+    # Decoder
+    print("Running entropy decoding")
+    quantization_image.entropy_decoding()
+
+    print("Dequantizing image")
+    quantization_image.dequantize()
+
+    print("iDCT")
+    yb, ub, vb = DCTImage.inverse_dct(quantization_image)
+
+    print("Building back image")
+    new_img = Image.construct_from_blocks([yb, ub, vb], width=image.width, height=image.height)
+
+    print("Converting to RGB...")
+    image.convert_color_space(PixelType.RGB)
+    new_img.convert_color_space(PixelType.RGB)
+
+    print("Saving image...")
+    image.save(ppm_save_filename)
+    new_img.save(ppm_blocks_save_filename)
+
+    print("Task done...")

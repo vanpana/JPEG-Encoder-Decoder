@@ -213,7 +213,8 @@ class Image:
         return str(self)
 
     def __str__(self):
-        return "{0} image, {1} x {2}, {3} actual pixels".format(self.im_type, self.width, self.height, len(self.pixels) * len(self.pixels[0]))
+        return "{0} image, {1} x {2}, {3} actual pixels".format(self.im_type, self.width, self.height,
+                                                                len(self.pixels) * len(self.pixels[0]))
 
 
 class DCTImage:
@@ -348,6 +349,7 @@ class QuantizationImage:
     def __init__(self, dct_image: DCTImage):
         self.blocks = deepcopy(dct_image.dct_blocks)  # Blocks are tuples of (y/cb/cr)
         self.quantize()
+        self.entropy_blocks = None
 
     def quantize(self):
         for i in range(0, len(self.blocks)):
@@ -355,6 +357,22 @@ class QuantizationImage:
                 for n in range(0, 8):
                     for k in range(0, 3):
                         self.blocks[i][k].items[m][n] //= self.get_quantization_matrix()[m][n]
+
+    def entropy_encoding(self):
+        self.entropy_blocks = []
+        for i in range(0, len(self.blocks)):
+            self.entropy_blocks.append((self.blocks[i][0].get_entropy(),
+                                        self.blocks[i][1].get_entropy(),
+                                        self.blocks[i][2].get_entropy()))
+
+    def entropy_decoding(self):
+        if self.entropy_blocks is None:
+            raise KeyError('Entropy hasn\'t ran yet')
+
+        for i in range(0, len(self.entropy_blocks)):
+            self.blocks[i] = (Block.get_from_entropy(self.entropy_blocks[i][0]),
+                              Block.get_from_entropy(self.entropy_blocks[i][1]),
+                              Block.get_from_entropy(self.entropy_blocks[i][2]))
 
     def dequantize(self):
         for i in range(0, len(self.blocks)):
